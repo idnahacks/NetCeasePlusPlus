@@ -11,9 +11,9 @@ function Get-SessRawvalue {
     param (
         [Parameter(Mandatory, HelpMessage = "Enter the raw string from the GPO GUI")]
         [string]
-        $rawdata
+        $gpostring
     )
-    $splitdata = $rawdata -split '(..)' -ne ''
+    $splitdata = $gpostring -split '(..)' -ne ''
     $decarray = @()
     foreach ($value in $splitdata) {
     $decvalue = [convert]::ToInt32($value, 16);
@@ -32,7 +32,7 @@ function Get-SessionEnumPermissions {
     Function to read in user provided hex string copied from the GPO value, or from the local registry and returns it as a Security Descriptor Object.
     .PARAMETER fromreg
     Specifies that the settings from the local registry should be displayed. This is the default behaviour and so this parameter is not required to be stated.
-    .PARAMETER rawdata
+    .PARAMETER gpostring
     Used to enter a hex string taken from the GPO setting relating to Session Enumeration permissions. The function will translate this into a Security Descriptor Object.
 
     .EXAMPLE
@@ -49,7 +49,7 @@ function Get-SessionEnumPermissions {
     .EXAMPLE
     Take the hex string set in the Group Policy Object that is currently applied (if applicable) and see the settings that this translates to
 
-    PS> Get-SessionEnumPermissions -rawdata "010004801400000020000000000000002c00000001010000000000051200000001010000000000051200000002008c000600000000001400ff011f0001010000000000050300000000001400ff011f0001010000000000050400000000001400ff011f000101000000000005060000000000180013000f00010200000000000520000000200200000000180013000f00010200000000000520000000230200000000180013000f0001020000000000052000000025020000" | Format-Table
+    PS> Get-SessionEnumPermissions -gpostring "010004801400000020000000000000002c00000001010000000000051200000001010000000000051200000002008c000600000000001400ff011f0001010000000000050300000000001400ff011f0001010000000000050400000000001400ff011f000101000000000005060000000000180013000f00010200000000000520000000200200000000180013000f00010200000000000520000000230200000000180013000f0001020000000000052000000025020000" | Format-Table
     
     TranslatedSID                         BinaryLength  AceQualifier IsCallback OpaqueLength AccessMask SecurityIdentifier                                    AceType AceFlags IsInherited
     -------------                         ------------  ------------ ---------- ------------ ---------- ------------------                                    ------- -------- -----------
@@ -66,14 +66,14 @@ function Get-SessionEnumPermissions {
     param (
         [Parameter(HelpMessage = "Enter the raw string from the GPO GUI")]
         [string]
-        $rawdata,
+        $gpostring,
         [Parameter(HelpMessage = "Gets the settings from the local registry")]
         [switch]
         $fromreg
     )
-    if ($rawdata) {
+    if ($gpostring) {
         
-        Get-SessRawvalue -rawdata $rawdata
+        Get-SessRawvalue -gpostring $gpostring
     }
     else {
         Get-SessRegkey
@@ -105,7 +105,7 @@ function Set-DefaultNetCeasePermissions {
         [switch]
         $toreg
     )
-    Get-SessRawvalue -rawdata 010004801400000020000000000000002c00000001010000000000051200000001010000000000051200000002008c000600000000001400ff011f0001010000000000050300000000001400ff011f0001010000000000050400000000001400ff011f000101000000000005060000000000180013000f00010200000000000520000000200200000000180013000f00010200000000000520000000230200000000180013000f0001020000000000052000000025020000
+    Get-SessRawvalue -gpostring 010004801400000020000000000000002c00000001010000000000051200000001010000000000051200000002008c000600000000001400ff011f0001010000000000050300000000001400ff011f0001010000000000050400000000001400ff011f000101000000000005060000000000180013000f00010200000000000520000000200200000000180013000f00010200000000000520000000230200000000180013000f0001020000000000052000000025020000
     $SRVSVC_SESSION_USER_INFO_GET = 0x00000001
     $data = New-Object -TypeName System.Byte[] -ArgumentList $csd.BinaryLength
     $csd.GetBinaryForm($data,0)
@@ -139,7 +139,7 @@ function Add-SessionEnumUser {
     Adds the user or group to the Session Enumeration permissions set in the local registry. Requires Powershell to be running as an Administrator.
     .PARAMETER fromreg
     Tells the module to read the Session Enumeration permissions from the local registry and add the new user or group to them.
-    .PARAMETER rawdata
+    .PARAMETER gpostring
     Tells the module to use the user provided hex string taken from the GPO gui and add the new user or group to it.
     .EXAMPLE
     Looks at the local registry settings and adds the user contoso.com\user1 to them.
@@ -149,7 +149,7 @@ function Add-SessionEnumUser {
     PS> Add-SessionEnumUser -user "contoso.com\user1" -fromreg
     .EXAMPLE
     Takes a hex string from the GPO GUI and adds the group contoso.com\group1 to it displaying the new hex string to be deployed.
-    PS> Add-SessionEnumUser -user "contoso.com\group1" -rawdata "010004801400000020000000000000002c00000001010000000000051200000001010000000000051200000002008c000600000000001400ff011f0001010000000000050300000000001400ff011f0001010000000000050400000000001400ff011f000101000000000005060000000000180013000f00010200000000000520000000200200000000180013000f00010200000000000520000000230200000000180013000f0001020000000000052000000025020000"
+    PS> Add-SessionEnumUser -user "contoso.com\group1" -gpostring "010004801400000020000000000000002c00000001010000000000051200000001010000000000051200000002008c000600000000001400ff011f0001010000000000050300000000001400ff011f0001010000000000050400000000001400ff011f000101000000000005060000000000180013000f00010200000000000520000000200200000000180013000f00010200000000000520000000230200000000180013000f0001020000000000052000000025020000"
     .LINK
     https://github.com/idnahacks/NetCeasePlusPlus
     #>
@@ -166,17 +166,17 @@ function Add-SessionEnumUser {
         $fromreg,
         [Parameter(HelpMessage = "Enter the raw string from the GPO GUI")]
         [string]
-        $rawdata
+        $gpostring
     )
         if ($fromreg) {
             Get-SessRegkey -ErrorAction STOP
         }
         else {
             try {
-                Get-SessRawvalue -rawdata $rawdata -ErrorAction STOP
+                Get-SessRawvalue -gpostring $gpostring -ErrorAction STOP
                 }
             catch [System.Management.Automation.ParameterBindingException]{
-                Write-Error "Either rawdata or fromreg must be selected as the input" -ErrorAction STOP
+                Write-Error "Either gpostring or fromreg must be selected as the input" -ErrorAction STOP
             }
             catch {
                 Write-Error $PSItem.Exception.Message -ErrorAction STOP
@@ -220,7 +220,7 @@ function Remove-SessionEnumUser {
     Removes the user or group from the Session Enumeration permissions set in the local registry. Requires Powershell to be running as an Administrator.
     .PARAMETER fromreg
     Tells the module to read the Session Enumeration permissions from the local registry and remove the new user or group from them.
-    .PARAMETER rawdata
+    .PARAMETER gpostring
     Tells the module to use the user provided hex string taken from the GPO gui and removes the new user or group from it.
     .EXAMPLE
     Looks at the local registry settings and removes the user contoso.com\user1 from them.
@@ -230,7 +230,7 @@ function Remove-SessionEnumUser {
     PS> Remove-SessionEnumUser -user "contoso.com\user1" -fromreg
     .EXAMPLE
     Takes a hex string from the GPO GUI and removes the group contoso.com\group1 from it displaying the new hex string to be deployed.
-    PS> Remove-SessionEnumUser -user "contoso.com\group1" -rawdata "010004801400000020000000000000002c00000001010000000000051200000001010000000000051200000002008c000600000000001400ff011f0001010000000000050300000000001400ff011f0001010000000000050400000000001400ff011f000101000000000005060000000000180013000f00010200000000000520000000200200000000180013000f00010200000000000520000000230200000000180013000f0001020000000000052000000025020000"
+    PS> Remove-SessionEnumUser -user "contoso.com\group1" -gpostring "010004801400000020000000000000002c00000001010000000000051200000001010000000000051200000002008c000600000000001400ff011f0001010000000000050300000000001400ff011f0001010000000000050400000000001400ff011f000101000000000005060000000000180013000f00010200000000000520000000200200000000180013000f00010200000000000520000000230200000000180013000f0001020000000000052000000025020000"
     .LINK
     https://github.com/idnahacks/NetCeasePlusPlus
     #>
@@ -246,17 +246,17 @@ function Remove-SessionEnumUser {
         $fromreg,
         [Parameter(HelpMessage = "Enter the raw string from the GPO GUI")]
         [string]
-        $rawdata
+        $gpostring
     )
     if ($fromreg) {
         Get-SessRegkey -ErrorAction STOP
     }
     else {
         try {
-            Get-SessRawvalue -rawdata $rawdata -ErrorAction STOP
+            Get-SessRawvalue -gpostring $gpostring -ErrorAction STOP
             }
         catch [System.Management.Automation.ParameterBindingException]{
-            Write-Error "Either rawdata or fromreg must be selected as the input" -ErrorAction STOP
+            Write-Error "Either gpostring or fromreg must be selected as the input" -ErrorAction STOP
         }
         catch {
             Write-Error $PSItem.Exception.Message -ErrorAction STOP
@@ -292,7 +292,7 @@ function Get-RemoteSAMPermissions {
     Function to read in user provided SDDL string copied from the GPO value relating to Remote SAM enumeration permissions, or from the local registry and returns it as an ACL.
     .PARAMETER fromreg
     Specifies that the settings from the local registry should be displayed. This is the default behaviour and so this parameter is not required to be stated.
-    .PARAMETER rawdata
+    .PARAMETER gpostring
     Used to enter an SDDL string taken from the GPO setting relating to Remote SAM enumeration permissions. The function will translate this into an ACL.
     .EXAMPLE
     Gets the Remote SAM permissions from the local registry.
@@ -302,7 +302,7 @@ function Get-RemoteSAMPermissions {
     PS> Get-RemoteSAMPermissions -fromreg
     .EXAMPLE
     Gets the Remote SAM permissions from a provided SDDL string.
-    Get-RemoteSAMPermissions -rawdata "O:BAG:BAD:(A;;RC;;;BA)"
+    Get-RemoteSAMPermissions -gpostring "O:BAG:BAD:(A;;RC;;;BA)"
     .LINK
     https://github.com/idnahacks/NetCeasePlusPlus
     #>
@@ -312,10 +312,10 @@ function Get-RemoteSAMPermissions {
         $fromreg,
         [Parameter(HelpMessage = "Enter the raw string from the GPO GUI")]
         [string]
-        $rawdata
+        $gpostring
     )
-    if ($rawdata) {
-        ConvertFrom-SddlString -sddl $rawdata | select -ExpandProperty DiscretionaryAcl
+    if ($gpostring) {
+        ConvertFrom-SddlString -sddl $gpostring | select -ExpandProperty DiscretionaryAcl
     }
     else {
         Get-SamRegKey
@@ -346,7 +346,7 @@ function Add-RemoteSAMUser {
     Requires Powershell to be running as an Administrator.
     .PARAMETER fromreg
     Tells the module to read the Remote SAM Enumeration permissions from the local registry and add the new user or group to them.
-    .PARAMETER rawdata
+    .PARAMETER gpostring
     Tells the module to use the user provided SDDL string taken from the GPO gui and add the new user or group to it.
     .EXAMPLE
     Looks at the local Remote SAM Enumeration registry settings and adds the user contoso.com\user1 to them.
@@ -356,7 +356,7 @@ function Add-RemoteSAMUser {
     PS> Add-RemoteSAMUser -user "contoso.com\user1" -fromreg
     .EXAMPLE
     Takes an SDDL string provided and adds the group contoso.com\group1 to it displaying the new SDDL string to be deployed.
-    PS> Add-RemoteSAMUser -user "constoso.com\group1" -rawdata "O:BAG:BAD:(A;;RC;;;BA)"
+    PS> Add-RemoteSAMUser -user "constoso.com\group1" -gpostring "O:BAG:BAD:(A;;RC;;;BA)"
     .LINK
     https://github.com/idnahacks/NetCeasePlusPlus
     #>
@@ -372,13 +372,13 @@ function Add-RemoteSAMUser {
         $fromreg,
         [Parameter(HelpMessage = "Enter the raw SDDL string from the GPO GUI")]
         [string]
-        $rawdata
+        $gpostring
     )
     $remoteAccess = 0x00020000
     $ntuser = New-Object System.Security.Principal.NTAccount($user)
     $sid = $ntuser.Translate([System.Security.Principal.SecurityIdentifier])
-    if ($rawdata) {
-        $rsd = New-Object -TypeName System.Security.AccessControl.RawSecurityDescriptor -ArgumentList $rawdata
+    if ($gpostring) {
+        $rsd = New-Object -TypeName System.Security.AccessControl.RawSecurityDescriptor -ArgumentList $gpostring
     }
     else {
         Get-SamRegKey
@@ -420,7 +420,7 @@ function Remove-RemoteSAMUser {
     Requires Powershell to be running as an Administrator.
     .PARAMETER fromreg
     Tells the module to read the Remote SAM Enumeration permissions from the local registry and removes the new user or group from them.
-    .PARAMETER rawdata
+    .PARAMETER gpostring
     Tells the module to use the user provided SDDL string taken from the GPO gui and removes the new user or group from it.
     .EXAMPLE
     Looks at the local Remote SAM Enumeration registry settings and removes the user contoso.com\user1 from them.
@@ -430,7 +430,7 @@ function Remove-RemoteSAMUser {
     PS> Remove-RemoteSAMUser -user "contoso.com\user1" -fromreg
     .EXAMPLE
     Takes an SDDL string provided and removes the group contoso.com\group1 from it displaying the new SDDL string to be deployed.
-    PS> Remove-RemoteSAMUser -user "constoso.com\group1" -rawdata <SDDLstring>
+    PS> Remove-RemoteSAMUser -user "constoso.com\group1" -gpostring <SDDLstring>
     .LINK
     https://github.com/idnahacks/NetCeasePlusPlus
     #>
@@ -446,13 +446,13 @@ function Remove-RemoteSAMUser {
         $fromreg,
         [Parameter(HelpMessage = "Enter the raw SDDL string from the GPO GUI")]
         [string]
-        $rawdata
+        $gpostring
     )
     $remoteAccess = 0x00020000
     $ntuser = New-Object System.Security.Principal.NTAccount($user)
     $sid = $ntuser.Translate([System.Security.Principal.SecurityIdentifier])
-    if ($rawdata) {
-        $rsd = New-Object -TypeName System.Security.AccessControl.RawSecurityDescriptor -ArgumentList $rawdata
+    if ($gpostring) {
+        $rsd = New-Object -TypeName System.Security.AccessControl.RawSecurityDescriptor -ArgumentList $gpostring
     }
     else {
         Get-SamRegKey
