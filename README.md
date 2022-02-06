@@ -4,6 +4,11 @@ A Powershell module that stands on the shoulders of the original [NetCease](http
 
 For a great overview on these two originating scripts and their intentions check out this [Stealthbits blogpost](https://stealthbits.com/blog/making-internal-reconnaissance-harder-using-netcease-and-samri1o/).
 
+------
+[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/B0B7AAAK2)  
+> I'm lucky enough to do this for a living. Any donations will be passed on to my local foodbank, animal sanctuary and animal rescue centres.  
+------
+
 ## Session Enumeration Permissions
 ### Viewing Session Enumeration Permissions
 To view the settings applied to your local machine use:
